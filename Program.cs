@@ -1,6 +1,9 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
+using System.Text;
 using Task_Management_App.DataBase;
 using Task_Management_App.Models;
 
@@ -13,6 +16,25 @@ builder.Services.AddDbContext<TaskDatabase>(options =>
 
 builder.Services.AddIdentity<AppUserModel, IdentityRole>()
     .AddEntityFrameworkStores<TaskDatabase>();
+
+var key = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]);
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = false,
+        ValidateAudience = false,
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(key)
+    };
+});
 
 builder.Services.AddAuthorization();
 builder.Services.AddControllers();
