@@ -54,6 +54,40 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
 }
 
+// ROLE SEEDING via scoped instance
+using (var scope = app.Services.CreateScope())
+{
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    var roles = new[] { "Admin", "User" };
+    foreach(var role in roles) 
+    {
+        if(!await roleManager.RoleExistsAsync(role))  // Checks if the role already exists to avoid duplicates.
+        {
+            await roleManager.CreateAsync(new IdentityRole(role));
+        }
+    }
+}
+
+// USER SEEDING via scoped instance
+using(var scope = app.Services.CreateScope())
+{
+    string email = "pwajeldi900@gmail.com";
+    string password = "Visored77@";
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUserModel>>();
+    if (await userManager.FindByEmailAsync(email) == null) // Checks that a user with the specified email does not already exist.
+    {
+        var user = new AppUserModel(); // if successful, create a new user
+        user.UserName = email;
+        user.Email = email;
+        user.LastName = "Joshua";
+        user.FirstName = "Joshua";
+        user.CreatedDate = DateTime.UtcNow;
+        
+        await userManager.CreateAsync(user, password);  // register the user
+        await userManager.AddToRoleAsync(user, "Admin"); // Makes the new created user to have the admin role
+    }
+}
+
 app.UseAuthentication();
 app.UseAuthorization();
 
