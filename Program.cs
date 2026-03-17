@@ -11,14 +11,18 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
+
+// REGISTER DATABASE SERVICE
 builder.Services.AddDbContext<TaskDatabase>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// REGISTER IDENTITY SERVICE FOR USER ROLES
 builder.Services.AddIdentity<AppUserModel, IdentityRole>()
     .AddEntityFrameworkStores<TaskDatabase>();
 
 var key = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]);
 
+// REGISTER AUTHENTICATION SERVICE WITH JWT BEARER
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
