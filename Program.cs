@@ -3,9 +3,11 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
+using System.Security.Claims;
 using System.Text;
 using Task_Management_App.DataBase;
 using Task_Management_App.Models;
+using Task_Management_App.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +22,7 @@ builder.Services.AddDbContext<TaskDatabase>(options =>
 builder.Services.AddIdentity<AppUserModel, IdentityRole>()
     .AddEntityFrameworkStores<TaskDatabase>();
 
+ArgumentNullException.ThrowIfNull(builder.Configuration["Jwt:Key"]);
 var key = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]);
 
 // REGISTER AUTHENTICATION SERVICE WITH JWT BEARER
@@ -27,7 +30,7 @@ builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-}).AddJwtBearer(options =>
+}).AddJwtBearer(options =>   //JWT configurations
 {
     options.RequireHttpsMetadata = false;
     options.SaveToken = true;
@@ -36,9 +39,11 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuer = false,
         ValidateAudience = false,
         ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(key)
+        IssuerSigningKey = new SymmetricSecurityKey(key),
+        RoleClaimType = ClaimTypes.Role
     };
 });
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 builder.Services.AddAuthorization();
 builder.Services.AddControllers();
@@ -89,7 +94,6 @@ using(var scope = app.Services.CreateScope())
 }
 
 app.UseAuthentication();
-app.UseAuthorization();
 
 app.MapControllers();
 
