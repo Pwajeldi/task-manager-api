@@ -20,7 +20,8 @@ builder.Services.AddDbContext<TaskDatabase>(options =>
 
 // REGISTER IDENTITY SERVICE FOR USER ROLES
 builder.Services.AddIdentity<AppUserModel, IdentityRole>()
-    .AddEntityFrameworkStores<TaskDatabase>();
+    .AddEntityFrameworkStores<TaskDatabase>()
+    .AddDefaultTokenProviders();
 
 ArgumentNullException.ThrowIfNull(builder.Configuration["Jwt:Key"]);
 var key = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]);
@@ -44,6 +45,9 @@ builder.Services.AddAuthentication(options =>
     };
 });
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddSingleton<IEmailQueue, EmailQueue>();
+builder.Services.AddSingleton<IEmailSender, EmailSender>();
+builder.Services.AddHostedService<EmailBackgroundService>();
 
 builder.Services.AddAuthorization();
 builder.Services.AddControllers();
