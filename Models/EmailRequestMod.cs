@@ -2,9 +2,9 @@
 {
     public class EmailRequestMod
     {
-        public string receiverName { get; set; }
-        public string receiverEmail { get; set; }
-        public string subject { get; set; }
-        public string content { get; set; }
+        public required string receiverName { get; set; }
+        public required string receiverEmail { get; set; }
+        public required string subject { get; set; }
+        public required string content { get; set; }
     }
 }

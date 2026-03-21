@@ -37,7 +37,7 @@ namespace Task_Management_App.Services
             var authClaims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id),
-                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Email, user.Email ),
                 new Claim(ClaimTypes.Name, user.UserName)
             }; //Gets the Claims of the found user
 
@@ -46,7 +46,7 @@ namespace Task_Management_App.Services
                 authClaims.Add(new Claim(ClaimTypes.Role, role));
             } // Adds the user's role(s) to the list of claims
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"] ?? throw new Exception("Jwt key not found")));
             //Gets the private security key from appsettings via IConfiguration
 
             var token = new JwtSecurityToken(

@@ -8,10 +8,12 @@ namespace Task_Management_App.Services
     public class EmailSender : IEmailSender
     {
         private readonly IConfiguration _configuration;
+        private readonly ILogger<EmailSender> _logger;
 
-        public EmailSender(IConfiguration configuration)
+        public EmailSender(IConfiguration configuration, ILogger<EmailSender> logger)
         {
             _configuration = configuration;
+            _logger = logger;
         }
 
         public async Task SendEmailAsync(string senderName, string senderEmail, EmailRequestMod emailrequest)
@@ -27,22 +29,22 @@ namespace Task_Management_App.Services
 
             using (var client = new SmtpClient())
             { 
-                var primaryport = int.Parse(_configuration["SmtpSettings:Port1"]);
-                var Fallbackport = int.Parse(_configuration["SmtpSettings:Port2"]);
+                var primaryport = int.Parse(_configuration["SmtpSettings:Port1"] ?? throw new Exception("Port number missing"));
+                var Fallbackport = int.Parse(_configuration["SmtpSettings:Port2"] ?? throw new Exception("Port number missing"));
                 var server = _configuration["SmtpSettings:Server"];
                 var username = _configuration["SmtpSettings:Login"];
                 var password = _configuration["SmtpSettings:Password"];
                 try
                 {
-                    Console.WriteLine("connecting...");
                     client.Connect(server, primaryport, false);
-                    Console.WriteLine($"Connected to SMTP server via port {primaryport}");
+                    _logger.LogInformation("Connected to SMTP server via port {primaryport}", primaryport);
                 }
                 catch (Exception ex) { 
-                    Console.WriteLine($"Error connecting via port {primaryport} : {ex.Message}" +
-                    $" \n Connecting via port {Fallbackport}...");
+                    _logger.LogWarning(ex,"Error connecting via port {primaryport}, Connecting via port {Fallbackport}...", primaryport, Fallbackport);
+
+
                     client.Connect(server, Fallbackport, MailKit.Security.SecureSocketOptions.SslOnConnect);
-                    Console.WriteLine($"Connected to SMTP server via port {Fallbackport}");
+                    _logger.LogInformation("Connected to SMTP server via port {Fallbackport}", Fallbackport);
                 }
 
                 // Establishes a secure connection to the SMTP server
@@ -52,31 +54,29 @@ namespace Task_Management_App.Services
                
                 try
                 {
-                    Console.WriteLine("Authenticating..");
+                    _logger.LogInformation("Authenticating..");
                     client.Authenticate(username, password);
-                    Console.WriteLine("Authentication succesfull");
+                    _logger.LogInformation("Authentication succesfull");
                 }
-                catch (Exception ex) { Console.WriteLine($"Error authenticating with SMTP server: {ex.Message}"); }
+                catch (Exception ex) { _logger.LogError(ex,"Error authenticating with SMTP server"); }
 
 
                 // Send the email message
                 try
                 {
-                    Console.WriteLine("Sending email...");
                     client.Send(message);
-                    Console.WriteLine("Mail sent to inbox");
+                    _logger.LogInformation("Mail sent to inbox");
                 }
-                catch (Exception ex) { Console.WriteLine($"Error sending email: {ex.Message}"); }
+                catch (Exception ex) { _logger.LogError(ex, "Error sending email"); }
 
 
                 // Disconnect from the SMTP server
                 try
                 {
-                    Console.WriteLine("Disconnecting...");
                     client.Disconnect(true);
-                    Console.WriteLine("Disconnected");
+                    _logger.LogInformation("Disconnected");
                 }
-                catch (Exception ex) { Console.WriteLine($"Error disconnecting from SMTP server: {ex.Message}"); }
+                catch (Exception ex) { _logger.LogError(ex, "Error disconnecting from SMTP server"); }
             }
         }
     }

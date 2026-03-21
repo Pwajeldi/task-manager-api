@@ -7,11 +7,13 @@ namespace Task_Management_App.Services
     {
         private readonly IEmailQueue _emailQueue;
         private readonly IEmailSender _emailSender;
+        private readonly ILogger<EmailBackgroundService> _logger;
 
-        public EmailBackgroundService(IEmailQueue emailQueue, IEmailSender emailSender)
+        public EmailBackgroundService(IEmailQueue emailQueue, IEmailSender emailSender, ILogger<EmailBackgroundService> logger)
         {
             _emailQueue = emailQueue;
             _emailSender = emailSender;
+            _logger = logger;
         }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -21,11 +23,12 @@ namespace Task_Management_App.Services
 
                 try { 
                     await _emailSender.SendEmailAsync("CorporaJ", "pwajeldi700@gmail.com", email);
+                    _logger.LogInformation("Email sent to {receiverEmail}", email.receiverEmail);
                 }
                 catch (Exception ex)
                 {
-                    // Log the exception (not implemented here)
-                    Console.WriteLine($"Failed to send email: {ex.Message}");
+                    // Log the exception
+                    _logger.LogError(ex,"Failed to send email");
                 }
             }
         }

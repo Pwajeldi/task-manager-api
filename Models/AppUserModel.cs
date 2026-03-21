@@ -8,7 +8,7 @@ namespace Task_Management_App.Models
         public string LastName { get; set; } = string.Empty;
         public DateTime CreatedDate { get; set; } = DateTime.Now;
 
-        public ICollection<TaskModel> Tasks { get; set; }
+        public ICollection<TaskModel>? Tasks { get; set; }
 
     }
 }

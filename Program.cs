@@ -24,7 +24,7 @@ builder.Services.AddIdentity<AppUserModel, IdentityRole>()
     .AddDefaultTokenProviders();
 
 ArgumentNullException.ThrowIfNull(builder.Configuration["Jwt:Key"]);
-var key = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]);
+var key = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? throw new Exception("Jwt key missing from appsettings.json"));
 
 // REGISTER AUTHENTICATION SERVICE WITH JWT BEARER
 builder.Services.AddAuthentication(options =>

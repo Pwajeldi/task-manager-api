@@ -18,14 +18,16 @@ namespace Task_Management_App.Controller
         private readonly UserManager<AppUserModel> _userManager;
         private readonly IEmailSender _emailSender;
         private readonly IEmailQueue _emailQueue;
+        private readonly ILogger<AuthController> _logger;
 
-        public AuthController(IAuthService authService, UserManager<AppUserModel> userManager, IEmailSender emailSender, IEmailQueue emailQueue)
+        public AuthController(IAuthService authService, UserManager<AppUserModel> userManager, IEmailSender emailSender, IEmailQueue emailQueue, ILogger<AuthController> logger)
         {
             _authService = authService;
             _userManager = userManager;
             _emailSender = emailSender;
             _emailQueue = emailQueue;
-        } //Dependency Injection of the IAuthService via the constructor
+            _logger = logger;
+        } //Dependency Injection of the necessary services into the constructor
 
 
         [HttpPost("Login")]
@@ -33,6 +35,7 @@ namespace Task_Management_App.Controller
         {
             var token = await _authService.LoginAsync(dto);
             // Runs the implementes method and returns the generated token after login
+            _logger.LogInformation("New Log-in: User {email}", dto.Email);
             return Ok(new { token });
         }
 
@@ -57,6 +60,7 @@ namespace Task_Management_App.Controller
 
             var RegUser = await _userManager.CreateAsync(appUser, dto.Password);
             await _userManager.AddToRoleAsync(appUser, "User");
+            _logger.LogInformation("New Registration: User {email}", dto.Email);
             return Ok(new { RegUser });
 
         }
@@ -77,15 +81,15 @@ namespace Task_Management_App.Controller
             {
                 _emailQueue.EnqueueEmail(new EmailRequestMod
                 {
-                    receiverEmail = user.Email,
+                    receiverEmail = dto.Email,
                     receiverName = user.FirstName + " " + user.LastName,
                     subject = "New Sign-in Confirmation",
                     content = $"Go to this link to verify your email \n {link}"
                 });
-
+                _logger.LogInformation("Confirmation email enqueued for user {email}", user.Email);
                 return Ok($"Email with confirmation link sent to {user.Email}");
             }
-            catch (Exception ex) { return BadRequest("Error occured while sending email, please try again later"); }
+            catch (Exception) { return BadRequest("Error occured while sending email, please try again later"); }
         }
 
 
@@ -102,6 +106,7 @@ namespace Task_Management_App.Controller
             {
                 return BadRequest("Invalid or expired token");
             }
+            _logger.LogInformation("Email confirmed for user {email}", user.Email);
             return Ok($"Your email {user.Email} has been confirmed succcessfully");
         }
     }
