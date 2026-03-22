@@ -5,8 +5,8 @@ namespace Task_Management_App.DTOs
 {
     public class CreateTaskdto
     {
-        [Required][StringLength(40)]public string? Title { get; set; }
-        [Required][StringLength(500)]public string? Description { get; set; }
-        [FutureDate]public DateTime DueDate { get; set; }
+        [Required][StringLength(40)]public required string Title { get; set; }
+        [Required][StringLength(500)]public required string Description { get; set; }
+        [Required][FutureDate]public required DateTime DueDate { get; set; }
     }
 }
