@@ -34,7 +34,7 @@ namespace Task_Management_App.Controller
                 DueDate = dto.DueDate,
                 UserId = userid,
             };
-            //UseSrtpData the dto to create a new task model object and add to the database. The userid acts as aforeign unique key.
+           
 
 
             await context.TaskTable.AddAsync(newTask); //Adds the new task to the database context without saving.
@@ -45,7 +45,7 @@ namespace Task_Management_App.Controller
         }
 
         // Endpoint to retrieve all tasks of the user
-        [HttpGet("GetTasks")]
+        [HttpGet("myTasks")]
         [Authorize]
         public async Task<IActionResult> GetUserTasks(TaskDatabase context)
         {
@@ -65,6 +65,29 @@ namespace Task_Management_App.Controller
                 return NotFound("You have no tasks saved.\n Create tasks and view them here!");
             }
             return Ok(userTasks);
-        }   
+        }
+
+        [HttpDelete("{id}")]
+        [Authorize]
+        public async Task<IActionResult> DeleteTask(TaskDatabase context, int id)
+        {
+            // find userid from jwt claims
+            var userid = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userid == null)
+            {
+                return Unauthorized("Cannot perform this action");
+            }
+
+            // find the ICollection Task where it matches with the userid.
+            var task = await context.TaskTable.FirstOrDefaultAsync(t => t.Id == id && t.UserId == userid);
+            if (task == null)
+            {
+                return NotFound("Task not found or you do not have permission to delete this task.");
+            }
+            
+            context.TaskTable.Remove(task);
+            await context.SaveChangesAsync();
+            return NoContent();
+        }
     }   
 }

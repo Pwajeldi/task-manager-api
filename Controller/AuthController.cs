@@ -2,7 +2,9 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.EntityFrameworkCore;
 using System.Text;
+using Task_Management_App.DataBase;
 using Task_Management_App.DTOs;
 using Task_Management_App.Migrations;
 using Task_Management_App.Models;
@@ -19,26 +21,71 @@ namespace Task_Management_App.Controller
         private readonly IEmailSender _emailSender;
         private readonly IEmailQueue _emailQueue;
         private readonly ILogger<AuthController> _logger;
+        private readonly TaskDatabase _context;
 
-        public AuthController(IAuthService authService, UserManager<AppUserModel> userManager, IEmailSender emailSender, IEmailQueue emailQueue, ILogger<AuthController> logger)
+        public AuthController(IAuthService authService, UserManager<AppUserModel> userManager, IEmailSender emailSender,
+            IEmailQueue emailQueue, ILogger<AuthController> logger, TaskDatabase context)
         {
             _authService = authService;
             _userManager = userManager;
             _emailSender = emailSender;
             _emailQueue = emailQueue;
             _logger = logger;
+            _context = context;
         } //Dependency Injection of the necessary services into the constructor
 
 
         [HttpPost("Login")]
         public async Task<IActionResult> Login(LoginDto dto)
         {
-            var token = await _authService.LoginAsync(dto);
-            // Runs the implementes method and returns the generated token after login
-            _logger.LogInformation("New Log-in: User {email}", dto.Email);
-            return Ok(new { token });
+            try
+            {
+                var token = await _authService.LoginAsync(dto);
+                // Runs the implementes method and returns the generated token after login
+                _logger.LogInformation("New Log-in: User {email}", dto.Email);
+                return Ok(new { token.AccessToken, token.RefreshToken });
+            }
+            catch (Exception)
+            {
+                _logger.LogWarning("Failed log-in attempt {email}", dto.Email);
+                return BadRequest("Invalid email or password");
+            } 
         }
 
+
+        [HttpPost("refresh")]   // request by thee frontend(including both tokens)
+        public async Task<IActionResult> Refresh(refreshRequestDto request) 
+        {
+            var storedToken = await _context.RefreshTokenTab.FirstOrDefaultAsync(t => t.RefreshToken == request.refreshToken);// fetch the token from db
+            var storedTokenUser = await _userManager.FindByIdAsync(storedToken.UserId); // get the User property from the token(refreshtokenMod)
+            if(storedToken == null || storedToken.IsRevoked || storedToken.Expires <= DateTime.UtcNow)
+            {
+                return Unauthorized("Invalid or expired refresh-token");
+            }
+
+            // Revoke the previous token for extra security
+            storedToken.IsRevoked = true;
+            _context.RefreshTokenTab.Update(storedToken);
+
+            // Generate the new tokens
+            try 
+            { 
+                var newAccessToken = _authService.GenerateAccessToken(storedTokenUser);
+                var newRefreshtoken = _authService.GenerateRefreshToken(storedToken.UserId);
+                _context.RefreshTokenTab.Remove(storedToken);
+                await _context.RefreshTokenTab.AddAsync(newRefreshtoken);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { newAccessToken.Result, newRefreshtoken.RefreshToken });
+            }
+            catch (Exception ex) {
+                Console.WriteLine($"Error while refreshing: {ex.Message}");
+                return BadRequest(ex.ToString());
+            }
+            
+        }
+
+        
 
         [HttpPost("Register")]
         public async Task<IActionResult> Register(RegisterDto dto)

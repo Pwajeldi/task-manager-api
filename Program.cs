@@ -47,7 +47,7 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer = "TaskManagementAPI",
         ValidAudience = "TaskManagementUsers",
     };
-    options.Events = new JwtBearerEvents
+    options.Events = new JwtBearerEvents // Description for unexpected events
     {
         OnAuthenticationFailed = context =>
         {
@@ -61,6 +61,16 @@ builder.Services.AddAuthentication(options =>
         }
     };
 });
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("ReactPolicy", builder =>
+    {
+        builder.WithOrigins("http://localhost:5173").AllowAnyHeader().AllowAnyMethod();
+    });
+}
+);
+
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddSingleton<IEmailQueue, EmailQueue>();
 builder.Services.AddSingleton<IEmailSender, EmailSender>();
@@ -113,7 +123,7 @@ using(var scope = app.Services.CreateScope())
         await userManager.AddToRoleAsync(user, "Admin"); // Makes the new created user to have the admin role
     }
 }
-
+app.UseCors("ReactPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
 

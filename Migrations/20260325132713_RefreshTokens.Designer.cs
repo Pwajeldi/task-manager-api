@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Task_Management_App.DataBase;
 
@@ -11,9 +12,11 @@ using Task_Management_App.DataBase;
 namespace Task_Management_App.Migrations
 {
     [DbContext(typeof(TaskDatabase))]
-    partial class TaskDatabaseModelSnapshot : ModelSnapshot
+    [Migration("20260325132713_RefreshTokens")]
+    partial class RefreshTokens
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -244,9 +247,6 @@ namespace Task_Management_App.Migrations
 
                     b.Property<DateTime>("Expires")
                         .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsRevoked")
-                        .HasColumnType("bit");
 
                     b.Property<string>("RefreshToken")
                         .IsRequired()
